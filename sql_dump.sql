@@ -6,16 +6,16 @@ drop table armor;
 drop table locations;
 
 CREATE TABLE person(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     HP INTEGER NOT NULL ,
     LVL INTEGER NOT NULL ,
     curent_loc INTEGER NOT NULL ,
-    inventory INTEGER NOT NULL ,--У нас разные таблицы с оружием
+    inventory_weapons TEXT ,--У нас разные таблицы с оружием
+    inventory_armor TEXT ,--и бронёй, поэтому инвентаря два.
     in_hand INTEGER NOT NULL ,--текущее оружие в руках
     on_body INTEGER NOT NULL ,--текущая броня
     FOREIGN KEY (curent_loc) REFERENCES locations(id),
-    FOREIGN KEY (inventory) REFERENCES weapons(id) armor,
     FOREIGN KEY (in_hand) REFERENCES weapons(id),
     FOREIGN KEY (on_body) REFERENCES armor(id)
 );
@@ -42,5 +42,6 @@ CREATE TABLE locations(
     name VARCHAR(255) NOT NULL UNIQUE,
     max_lvl INTEGER NOT NULL
 );
+
 
 
