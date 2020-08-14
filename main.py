@@ -17,6 +17,16 @@ class Base(commands.Cog):
     async def register(self, ctx):  # Пример регистрации пользователей.В дальнейшем заменим!
         self.dictin[self.i] = f'{ctx.message.author}'
         self.i += 1
+        emb = discord.Embed(title='Великая GameName', colour=discord.Colour.from_rgb(150, 206, 214))
+        emb.set_author(name="Злой ГМ",
+                       icon_url=self.botIconUrl)
+        emb.add_field(name='Приветствую тебя, дорогой искатель приключений!',
+                      value="Ты попал в ванильный фэнтезийный бред. Заставим Рому это писать.",
+                      inline=False)
+        emb.add_field(name="Комманды для игры",
+                      value="`register`, `players_list`")
+        await ctx.message.author.create_dm()
+        await ctx.message.author.dm_channel.send(embed=emb)
 
         await ctx.send(f'{ctx.message.author.mention} - тебя зарегистрировали!')
 
