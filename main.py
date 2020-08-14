@@ -18,9 +18,9 @@ class Base(commands.Cog):
     @commands.command()
     async def register(self, ctx):  # Пример регистрации пользователей.В дальнейшем заменим!
         member = ctx.message.author
-        role = get(member.guild.roles, name="test_role")
+        role = get(member.guild.roles, name="test_role")  # получаем нужную роль
 
-        if get(member.roles, name='test_role'):
+        if get(member.roles, name='test_role'):  # проверка существует ли у этого пользователя роль
             await ctx.send(f'{member.mention} - ты уже зарегистрирован!')
 
         else:
@@ -61,7 +61,6 @@ class Base(commands.Cog):
         emb.add_field(name="Комманды для игры",
                       value="`register`, `players_list`")
         await ctx.send(embed=emb)
-
 
 
 def main():
