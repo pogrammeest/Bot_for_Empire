@@ -2,6 +2,8 @@
 
 import discord, os
 from discord.ext import commands
+from discord.utils import get
+
 import sqlite3
 
 
@@ -15,20 +17,31 @@ class Base(commands.Cog):
 
     @commands.command()
     async def register(self, ctx):  # Пример регистрации пользователей.В дальнейшем заменим!
-        self.dictin[self.i] = f'{ctx.message.author}'
-        self.i += 1
-        emb = discord.Embed(title='Великая GameName', colour=discord.Colour.from_rgb(150, 206, 214))
-        emb.set_author(name="Злой ГМ",
-                       icon_url=self.botIconUrl)
-        emb.add_field(name='Приветствую тебя, дорогой искатель приключений!',
-                      value="Ты попал в ванильный фэнтезийный бред. Заставим Рому это писать.",
-                      inline=False)
-        emb.add_field(name="Комманды для игры",
-                      value="`register`, `players_list`")
-        await ctx.message.author.create_dm()
-        await ctx.message.author.dm_channel.send(embed=emb)
+        member = ctx.message.author
+        role = get(member.guild.roles, name="test_role")
 
-        await ctx.send(f'{ctx.message.author.mention} - тебя зарегистрировали!')
+        if get(member.roles, name='test_role'):
+            await ctx.send(f'{member.mention} - ты уже зарегистрирован!')
+
+        else:
+            self.dictin[self.i] = f'{member}'
+            self.i += 1
+
+            print(f'Роль {role} добавленна юзеру {member}!')
+            await member.add_roles(role)
+
+            emb = discord.Embed(title='Великая GameName', colour=discord.Colour.from_rgb(150, 206, 214))
+            emb.set_author(name="Злой ГМ",
+                           icon_url=self.botIconUrl)
+            emb.add_field(name='Приветствую тебя, дорогой искатель приключений!',
+                          value="Ты попал в ванильный фэнтезийный бред. Заставим Рому это писать.",
+                          inline=False)
+            emb.add_field(name="Комманды для игры",
+                          value="`register`, `players_list`")
+            await member.create_dm()
+            await member.dm_channel.send(embed=emb)
+
+            await ctx.send(f'{member.mention} - тебя зарегистрировали!')
 
     @commands.command()
     async def hello(self, ctx):
@@ -50,6 +63,7 @@ class Base(commands.Cog):
         await ctx.send(embed=emb)
 
 
+
 def main():
     TOKEN = os.environ.get('TOKEN_FOR_BOT')
     bot = commands.Bot(command_prefix='t! ')
@@ -62,8 +76,9 @@ def main():
     @bot.event
     async def on_command_error(ctx, error):
         if isinstance(error, commands.CommandNotFound):
-            await ctx.send(embed=discord.Embed(description=f'**{ctx.author.name}**, данной команды не существует. Пожалуйста воспользуйтесь команндой **help** для полного списка команд.',
-                                               color=0x0c0c0c))
+            await ctx.send(embed=discord.Embed(
+                description=f'**{ctx.author.name}**, данной команды не существует. Пожалуйста воспользуйтесь команндой **help** для полного списка команд.',
+                color=discord.Colour.from_rgb(191, 56, 74)))
 
     bot.add_cog(Base(bot))
 
