@@ -6,11 +6,12 @@ import sqlite3
 
 
 class Base(commands.Cog):
-    def __init__(self, ctx):  # Иницилизация для работы регистра
+    def __init__(self, bot):  # Иницилизация для работы регистра
         self.dictin = {}
         self.i = 0
+        self.bot = bot
         self.botName = 'Список комманд'
-        self.botIconUrl = "https://funart.pro/uploads/posts/2020-04/1586709130_17-p-raduzhnie-foni-dlya-prezentatsii-27.jpg"
+        self.botIconUrl = "https://clipart-best.com/img/ruby/ruby-clip-art-20.png"
 
     @commands.command()
     async def register(self, ctx):  # Пример регистрации пользователей.В дальнейшем заменим!
@@ -41,12 +42,18 @@ class Base(commands.Cog):
 
 def main():
     TOKEN = os.environ.get('TOKEN_FOR_BOT')
-    bot = commands.Bot(command_prefix='iki-')
+    bot = commands.Bot(command_prefix='t! ')
     bot.remove_command(name='help')
 
     @bot.event
     async def on_ready():
         print(f'Logged in as {bot.user.name}')
+
+    @bot.event
+    async def on_command_error(ctx, error):
+        if isinstance(error, commands.CommandNotFound):
+            await ctx.send(embed=discord.Embed(description=f'**{ctx.author.name}**, данной команды не существует. Пожалуйста воспользуйтесь команндой **help** для полного списка команд.',
+                                               color=0x0c0c0c))
 
     bot.add_cog(Base(bot))
 
