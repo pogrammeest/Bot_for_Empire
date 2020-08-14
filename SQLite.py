@@ -22,13 +22,13 @@ class sqlite():
         self.curs.execute(f"DELETE FROM {table_name} WHERE {where}")
 
     def update(self,table_name,coloumn_name,values,where):
-        '''print(f"UPDATE {table_name} SET {coloumn_name} = '{values}' WHERE {where}")'''
         self.curs.execute(f"UPDATE {table_name} SET {coloumn_name} = '{values}' WHERE {where}")
 
-obj=sqlite('sql.db')
+if __name__=='__main__':
+    obj=sqlite('sql.db')
 
-obj.enter('locations(name,max_lvl)',('bolota',20))#примеры использования каждого метода
-obj.read('*','locations')
-obj.update('locations','max_lvl','40','id=1')
-obj.read('*','locations')
-obj.delete('locations','id=1')
+    obj.enter('locations(name,max_lvl)',('bolota',20))#примеры использования каждого метода
+    obj.read('*','locations')
+    obj.update('locations','max_lvl','40','id=1')
+    obj.read('*','locations')
+    obj.delete('locations','id=1')
