@@ -3,6 +3,8 @@
 import discord, os
 from discord.ext import commands
 from discord.utils import get
+import variables
+from variables import *
 
 import sqlite3
 
@@ -12,8 +14,6 @@ class Base(commands.Cog):
         self.dictin = {}
         self.i = 0
         self.bot = bot
-        self.botName = 'Список комманд'
-        self.botIconUrl = "https://clipart-best.com/img/ruby/ruby-clip-art-20.png"
 
     @commands.command()
     async def hello(self, ctx):
@@ -21,14 +21,7 @@ class Base(commands.Cog):
 
     @commands.command()
     async def help(self, ctx):
-        emb = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
-        emb.set_author(name=self.botName,
-                       icon_url=self.botIconUrl)
-        emb.add_field(name='Обычные команды',
-                      value="`hello`")
-        emb.add_field(name="Комманды для игры",
-                      value="`register`, `players_list`")
-        await ctx.send(embed=emb)
+        await ctx.send(embed=helpEmb)
 
 
 class Game(commands.Cog):
@@ -36,10 +29,8 @@ class Game(commands.Cog):
         self.dictin = {}
         self.i = 0
         self.bot = bot
-        self.botName = 'Список комманд'
-        self.botIconUrl = "https://clipart-best.com/img/ruby/ruby-clip-art-20.png"
 
-    def check_category(ctx):
+    def check_category(ctx):  # функция для декоратора проверки категории
         return ctx.channel.category.id == 744483296032981093
 
     @commands.command()
@@ -62,17 +53,8 @@ class Game(commands.Cog):
 
             print(f'Роль {role} добавленна юзеру {member}!')
             await member.add_roles(role)
-
-            emb = discord.Embed(title='Великая GameName', colour=discord.Colour.from_rgb(150, 206, 214))
-            emb.set_author(name="Злой ГМ",
-                           icon_url=self.botIconUrl)
-            emb.add_field(name='Приветствую тебя, дорогой искатель приключений!',
-                          value="Ты попал в ванильный фэнтезийный бред. Заставим Рому это писать.",
-                          inline=False)
-            emb.add_field(name="Комманды для игры",
-                          value="`register`, `players_list`")
             await member.create_dm()
-            await member.dm_channel.send(embed=emb)
+            await member.dm_channel.send(embed=regEmb)
 
             await ctx.send(f'{member.mention} - тебя зарегистрировали!')
 
@@ -88,11 +70,11 @@ def main():
 
     @bot.event
     async def on_command_error(ctx, error):
-        if isinstance(error, commands.CommandNotFound):
+        if isinstance(error, commands.CommandNotFound):  # отлов ошибки несуществубщей команды
             await ctx.send(embed=discord.Embed(
                 description=f'**{ctx.author.name}**, данной команды не существует. Пожалуйста воспользуйтесь команндой **help** для полного списка команд.',
                 color=discord.Colour.from_rgb(191, 56, 74)))
-        if isinstance(error, commands.CheckFailure):
+        if isinstance(error, commands.CheckFailure):  # отлов ошибки проверки
             await ctx.send(embed=discord.Embed(
                 description=f'**{ctx.author.name}**, вы используете команду не в той категории какналов. Пожалуйста воспользуйтесь команндой **help** для определения необходимой категории.',
                 color=discord.Colour.from_rgb(191, 56, 74)))
