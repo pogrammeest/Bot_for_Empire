@@ -45,6 +45,9 @@ class Base(commands.Cog):
 
     @commands.command()
     async def hello(self, ctx):
+
+
+
         await ctx.send(f'Hello, {ctx.message.author.mention}!')
 
     @commands.command()
@@ -79,6 +82,10 @@ def main():
                 description=f'**{ctx.author.name}**, данной команды не существует. Пожалуйста воспользуйтесь команндой **help** для полного списка команд.',
                 color=discord.Colour.from_rgb(191, 56, 74)))
 
+    @bot.event
+    async def on_message(message):
+        if message.channel.category.id == 744483296032981093:
+            await bot.process_commands(message)
     bot.add_cog(Base(bot))
 
     bot.run(TOKEN)

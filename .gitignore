@@ -5,7 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-sql.db
+sql.sqlite
 sqllit3_python.py
 # Distribution / packaging
 .Python
@@ -129,3 +129,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .idea/
+sql.sqlite
