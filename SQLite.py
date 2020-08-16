@@ -35,5 +35,5 @@ if __name__ == '__main__':
     # obj.enter('locations(name,max_lvl)', ('bolotas', 50))  # примеры использования каждого метода
     # print(obj.read_db('*', 'locations'))
     # obj.update('locations', 'name', 'замок', 'id=1')
-    # obj.read('*', 'locations')
-    obj.delete_db('person', 'id=1243456346534')
+    print(obj.read_db('*', 'locations'))
+    # obj.delete_db('person', 'id=1243456346534')
