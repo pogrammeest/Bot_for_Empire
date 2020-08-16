@@ -16,6 +16,39 @@ class Base(commands.Cog):
         self.botIconUrl = "https://clipart-best.com/img/ruby/ruby-clip-art-20.png"
 
     @commands.command()
+    async def hello(self, ctx):
+        await ctx.send(f'Hello, {ctx.message.author.mention}!')
+
+    @commands.command()
+    async def help(self, ctx):
+        emb = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
+        emb.set_author(name=self.botName,
+                       icon_url=self.botIconUrl)
+        emb.add_field(name='Обычные команды',
+                      value="`hello`")
+        emb.add_field(name="Комманды для игры",
+                      value="`register`, `players_list`")
+        await ctx.send(embed=emb)
+
+
+class Game(commands.Cog):
+    def __init__(self, bot):  # Иницилизация для работы регистра
+        self.dictin = {}
+        self.i = 0
+        self.bot = bot
+        self.botName = 'Список комманд'
+        self.botIconUrl = "https://clipart-best.com/img/ruby/ruby-clip-art-20.png"
+
+    def check_category(ctx):
+        return ctx.channel.category.id == 744483296032981093
+
+    @commands.command()
+    @commands.check(check_category)
+    async def players_list(self, ctx):  # Пример просмотра листа зарегестрированных пользователей
+        await ctx.send(f'OK, {ctx.message.author.mention} Вот твои пользователи:\n {self.dictin}')
+
+    @commands.command()
+    @commands.check(check_category)
     async def register(self, ctx):  # Пример регистрации пользователей.В дальнейшем заменим!
         member = ctx.message.author
         role = get(member.guild.roles, name="test_role")  # получаем нужную роль
@@ -43,28 +76,6 @@ class Base(commands.Cog):
 
             await ctx.send(f'{member.mention} - тебя зарегистрировали!')
 
-    @commands.command()
-    async def hello(self, ctx):
-
-
-
-        await ctx.send(f'Hello, {ctx.message.author.mention}!')
-
-    @commands.command()
-    async def players_list(self, ctx):  # Пример просмотра листа зарегестрированных пользователей
-        await ctx.send(f'OK, {ctx.message.author.mention} Вот твои пользователи:\n {self.dictin}')
-
-    @commands.command()
-    async def help(self, ctx):
-        emb = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
-        emb.set_author(name=self.botName,
-                       icon_url=self.botIconUrl)
-        emb.add_field(name='Обычные команды',
-                      value="`hello`")
-        emb.add_field(name="Комманды для игры",
-                      value="`register`, `players_list`")
-        await ctx.send(embed=emb)
-
 
 def main():
     TOKEN = os.environ.get('TOKEN_FOR_BOT')
@@ -81,12 +92,13 @@ def main():
             await ctx.send(embed=discord.Embed(
                 description=f'**{ctx.author.name}**, данной команды не существует. Пожалуйста воспользуйтесь команндой **help** для полного списка команд.',
                 color=discord.Colour.from_rgb(191, 56, 74)))
+        if isinstance(error, commands.CheckFailure):
+            await ctx.send(embed=discord.Embed(
+                description=f'**{ctx.author.name}**, вы используете команду не в той категории какналов. Пожалуйста воспользуйтесь команндой **help** для определения необходимой категории.',
+                color=discord.Colour.from_rgb(191, 56, 74)))
 
-    @bot.event
-    async def on_message(message):
-        if message.channel.category.id == 744483296032981093:
-            await bot.process_commands(message)
     bot.add_cog(Base(bot))
+    bot.add_cog(Game(bot))
 
     bot.run(TOKEN)
 
