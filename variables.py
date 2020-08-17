@@ -16,3 +16,5 @@ regEmb.add_field(name='Приветствую тебя, дорогой иска�
               inline=False)
 regEmb.add_field(name="Комманды для игры",
               value="`register`, `players_list`")
+
+

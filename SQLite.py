@@ -15,7 +15,7 @@ class WWDB():
     def read_db(self, argue,
              table_name):  # метод вывода любых значений из любой таблицы. В аргументы ввести выборку и имя таблицы
         self.curs.execute(f"select {argue} from {table_name}")
-        rows = self.curs.fetchall()  # кусок кода
+        rows = self.curs.fetchall()
 
         return rows
 
@@ -34,6 +34,7 @@ if __name__ == '__main__':
 
     # obj.enter('locations(name,max_lvl)', ('bolotas', 50))  # примеры использования каждого метода
     # print(obj.read_db('*', 'locations'))
-    # obj.update('locations', 'name', 'замок', 'id=1')
-    print(obj.read_db('*', 'locations'))
+    #obj.update_db('person', 'inventory_armor', '0', 'id=259316355537305604')
+    #print(obj.read_db('*', 'locations'))
     # obj.delete_db('person', 'id=1243456346534')
+    print(obj.read_db('curent_loc', f'person where id = 259316355537305604'))
