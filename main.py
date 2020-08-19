@@ -87,13 +87,16 @@ class Game(commands.Cog, WWDB):
 
             person_profile = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
             person_profile.set_author(name=f"{ctx.message.author.name}", icon_url=f'{ctx.message.author.avatar_url}')
-            person_profile.add_field(name=f'Текущии характеристики:\nHP:  `{data[2]}` \nLVL:  `{data[3]}`\nТекущая локация: `{data[4]}`  ', #не забыть дописать!!!!
-                             value="Какую-нибудь писанину сюда добавте, ото оно без значения не работает",
-                             inline=False)
+            person_profile.add_field(
+                name=f'Текущии характеристики:\nHP:  `{data[2]}` \nLVL:  `{data[3]}`\nТекущая локация: `{data[4]}`  ',
+                # не забыть дописать!!!!
+                value="Какую-нибудь писанину сюда добавте, ото оно без значения не работает",
+                inline=False)
 
             await ctx.send(embed=person_profile)
         except Exception as err:
             print(err)
+
 
 def main():
     TOKEN = os.environ.get('TOKEN_FOR_BOT')
@@ -112,7 +115,7 @@ def main():
                 color=discord.Colour.from_rgb(191, 56, 74)))
         if isinstance(error, commands.CheckFailure):  # отлов ошибки проверки
             await ctx.send(embed=discord.Embed(
-                description=f'**{ctx.author.name}**, вы используете команду не в той категории какналов. Пожалуйста воспользуйтесь команндой **help** для определения необходимой категории.',
+                description=f'**{ctx.author.name}**, вы используете команду не в том канале. Пожалуйста воспользуйтесь команндой **help** для определения необходимой категории.',
                 color=discord.Colour.from_rgb(191, 56, 74)))
 
     bot.add_cog(Base(bot))
