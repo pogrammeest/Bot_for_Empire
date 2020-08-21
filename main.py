@@ -6,6 +6,7 @@ from discord.utils import get
 import variables
 from variables import *
 from SQLite import WWDB
+import random
 
 import sqlite3
 
@@ -36,8 +37,12 @@ class Game(commands.Cog, WWDB):
     def check_reg_channel(ctx):
         return ctx.channel.id == 744484575341838367
 
+    def check_loc_channel(ctx, self):
+        return loc_channel(ctx) == self.read.db('curent_loc', f'person where id = {ctx.message.author.id}')
+
+
     @commands.command()
-    @commands.check(check_category)
+    @commands.check(check_loc_channel)
     async def players_list(self, ctx):  # Пример просмотра листа зарегестрированных пользователей
 
         data = self.read_db('*', 'person')
@@ -54,8 +59,8 @@ class Game(commands.Cog, WWDB):
             await ctx.send(f'{member.mention} - ты уже зарегистрирован!')
 
         else:
-            self.enter_db('person(id,name,HP,LVL,curent_loc,inventory_weapons,inventory_armor,in_hand,on_body)',
-                          (int(member.id), member.name, 10, 1, 'таверня', '1', '1', 1, 1))
+            self.enter_db('person(id,name,HP,LVL,curent_loc,inventory_weapons,inventory_armor,in_hand,on_body,XP)',
+                          (int(member.id), member.name, 10, 1, 1, '1', '1', 1, 1, 0))
             print(f'Роль {role} добавленна юзеру {member}!')
             await member.add_roles(role)
             await member.create_dm()
@@ -94,6 +99,84 @@ class Game(commands.Cog, WWDB):
                 inline=False)
 
             await ctx.send(embed=person_profile)
+        except Exception as err:
+            print(err)
+
+    @commands.command()
+    @commands.check(check_category)
+    async def cripBattle(self, ctx):  # недоделанно
+        try:
+            count = 1
+            display_battle = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
+            display_battle.set_author(name="Злой ГМ", icon_url='https://clipart-best.com/img/ruby/ruby-clip-art-20.png')
+
+            data = self.read_db('*', f'person where id = {ctx.message.author.id}')
+
+            person_LVL = data[0][3]
+            person_HP = data[0][2]
+
+            person_weapon = data[0][7]
+            damage = self.read_db('damage', f'weapons where id = {person_weapon}')[0]
+
+            person_armor = data[0][8]
+            protection = self.read_db('protection', f'armor where id = {person_armor}')[0]
+
+            crip_LVL = person_LVL - 1
+            if crip_LVL == 0:
+                crip_damage = 1
+                crip_HP = int(person_HP / 2)
+
+                display_battle.add_field(
+                    name=f'Характеристики преред игрой:',
+                    value=f"Твоё хп: `{person_HP}`\nХп крипа: `{crip_HP}`",
+                    inline=False)
+
+                damage_itog = round(random.uniform(0.5, 2.0) * damage, 2)
+
+                damage_itog_person = round(
+                    (round(random.uniform(0.5, 2.0), 2) * crip_damage) - (protection * damage_itog), 2)
+
+                display_battle.add_field(
+                    name=f'Характеристики на ход {count}:',
+                    value=f"Твоё хп: `{person_HP}` - `{damage_itog_person}`:drop_of_blood:\nХп крипа: `{crip_HP}`-`{damage_itog}`:drop_of_blood:",
+                    inline=False)
+
+                crip_HP -= damage_itog
+
+                person_HP -= round(damage_itog_person, 2)
+
+                while True:
+                    count += 1
+                    damage_itog_person = round(
+                        (round(random.uniform(0.5, 2.0), 2) * crip_damage) - (protection * damage_itog), 2)
+                    damage_itog = round(random.uniform(0.5, 2.0) * damage, 2)
+
+                    display_battle.add_field(
+                        name=f'Характеристики на ход {count}:',
+                        value=f"Твоё хп: `{person_HP}`-`{damage_itog_person}`:drop_of_blood:\nХп крипа: `{crip_HP}`-`{damage_itog}`:drop_of_blood:",
+                        inline=False)
+
+                    person_HP -= damage_itog_person
+                    person_HP = round(person_HP, 2)
+
+                    crip_HP -= damage_itog
+                    crip_HP = round(crip_HP, 2)
+
+                    if crip_HP < 0:
+                        display_battle.add_field(
+                            name=f'Ты выиграл!',
+                            value=f"Твоё хп оставшеесе хп: `{person_HP}`",
+                            inline=False)
+                        break
+                    elif person_HP < 0:
+                        display_battle.add_field(
+                            name=f'Ты проиграл',
+                            value=f" Оставшеесе хп крипа: `{crip_HP}`",
+                            inline=False)
+                        break
+                await ctx.send(embed=display_battle)
+            # нужно реалезовать синхронную функцию боя
+
         except Exception as err:
             print(err)
 

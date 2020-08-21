@@ -18,3 +18,18 @@ regEmb.add_field(name="Комманды для игры",
               value="`players_list`, `location`, `profile`")
 
 
+def loc_channel(ctx):
+    if ctx.channel.id == 744484105852551239: #таверня
+        return 1
+    elif ctx.channel.id == 744483452203696160: #болота
+        return 2
+    elif ctx.channel.id == 744948183242637374: #лес
+        return 3
+    elif ctx.channel.id == 744947492923244615: #могильник
+        return 4
+    elif ctx.channel.id == 744947400489173152: #цитадель
+        return 5
+    elif ctx.channel.id == 744948528018620547: #лабиринт
+        return 6
+    elif ctx.channel.id == 744947464448114798: #зиккурат
+        return 7
