@@ -1,4 +1,5 @@
 import discord
+import sqlite3
 
 helpEmb = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
 helpEmb.set_author(name='Список команд',
@@ -10,26 +11,29 @@ helpEmb.add_field(name="Комманды для игры",
 
 regEmb = discord.Embed(title='Великая GameName', colour=discord.Colour.from_rgb(150, 206, 214))
 regEmb.set_author(name="Злой ГМ",
-               icon_url='https://clipart-best.com/img/ruby/ruby-clip-art-20.png')
+                  icon_url='https://clipart-best.com/img/ruby/ruby-clip-art-20.png')
 regEmb.add_field(name='Приветствую тебя, дорогой искатель приключений!',
-              value="Ты попал в ванильный фэнтезийный бред. Заставим Рому это писать.",
-              inline=False)
+                 value="Ты попал в ванильный фэнтезийный бред. Заставим Рому это писать.",
+                 inline=False)
 regEmb.add_field(name="Комманды для игры",
-              value="`players_list`, `location`, `profile`")
+                 value="`players_list`, `location`, `profile`")
 
 
-def loc_channel(ctx):
-    if ctx.channel.id == 744484105852551239: #таверня
+def loc_channel(id):
+    if id == 744484105852551239:  # таверня
+        return 0
+    elif id == 744948183242637374:  # лес
         return 1
-    elif ctx.channel.id == 744483452203696160: #болота
+    elif id == 744483452203696160:  # болота
         return 2
-    elif ctx.channel.id == 744948183242637374: #лес
+    elif id == 744947492923244615:  # могильник
         return 3
-    elif ctx.channel.id == 744947492923244615: #могильник
+    elif id == 744947400489173152:  # цитадель
         return 4
-    elif ctx.channel.id == 744947400489173152: #цитадель
+    elif id == 744948528018620547:  # лабиринт
         return 5
-    elif ctx.channel.id == 744948528018620547: #лабиринт
+    elif id == 744947464448114798:  # зиккурат
         return 6
-    elif ctx.channel.id == 744947464448114798: #зиккурат
-        return 7
+
+
+locations = ['таверна', 'лес', 'болото', 'могильник', 'цитадель', 'лабиринт', 'зиккурат']

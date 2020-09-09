@@ -7,7 +7,6 @@ import variables
 from variables import *
 from SQLite import WWDB
 import random
-
 import sqlite3
 
 
@@ -31,20 +30,18 @@ class Game(commands.Cog, WWDB):
         self.bot = bot
         self.location = [i[1] for i in self.read_db('*', 'locations')]
 
-    def check_category(ctx):  # функция для декоратора проверки категории
-        return ctx.channel.category.id == 744483296032981093
+    def check_reg_channel(ctx):  # функция для декоратора проверки канала регистрации
+        return ctx.channel.id == 753268164833443841
 
-    def check_reg_channel(ctx):
-        return ctx.channel.id == 744484575341838367
+    def check_tav_channel(ctx):  # функция для декоратора проверки канала тавнерны
+        return loc_channel(ctx.channel.id) == 0
 
-    def check_loc_channel(ctx, self):
-        return loc_channel(ctx) == self.read.db('curent_loc', f'person where id = {ctx.message.author.id}')
-
+    def check_battle_channel(ctx):  # функция для декоратора проверки канала боевых лок
+        return loc_channel(ctx.channel.id) in [1, 2, 3, 4, 5, 6]
 
     @commands.command()
-    @commands.check(check_loc_channel)
+    @commands.check_any(check_reg_channel, check_tav_channel)
     async def players_list(self, ctx):  # Пример просмотра листа зарегестрированных пользователей
-
         data = self.read_db('*', 'person')
         await ctx.send(
             'OK, {0}. Вот твои пользователи:\n {1}'.format(ctx.message.author.mention, data))
@@ -52,40 +49,51 @@ class Game(commands.Cog, WWDB):
     @commands.command()
     @commands.check(check_reg_channel)
     async def register(self, ctx):  # Регистрация пользователей
-        member = ctx.message.author
-        role = get(member.guild.roles, name="test_role")  # получаем нужную роль
+        try:
+            member = ctx.message.author
+            role = get(member.guild.roles, name="таверна")  # получаем нужную роль
 
-        if get(member.roles, name='test_role'):  # проверка существует ли у этого пользователя роль
-            await ctx.send(f'{member.mention} - ты уже зарегистрирован!')
+            if get(member.roles, name='test_role'):  # проверка существует ли у этого пользователя роль
+                await ctx.send(f'{member.mention} - ты уже зарегистрирован!')
 
-        else:
-            self.enter_db('person(id,name,HP,LVL,curent_loc,inventory_weapons,inventory_armor,in_hand,on_body,XP)',
-                          (int(member.id), member.name, 10, 1, 1, '1', '1', 1, 1, 0))
-            print(f'Роль {role} добавленна юзеру {member}!')
-            await member.add_roles(role)
-            await member.create_dm()
-            await member.dm_channel.send(embed=regEmb)
-            await ctx.send(f'{member.mention} - тебя зарегистрировали!')
+            else:
+                self.enter_db('person(id,name,HP,LVL,curent_loc,inventory_weapons,inventory_armor,in_hand,on_body,XP)',
+                              (int(member.id), member.name, 10, 1, 1, '1', '1', 1, 1, 0))
+                print(f'Роль {role} добавленна юзеру {member}!')
+                await member.add_roles(role)
+                await member.create_dm()
+                await member.dm_channel.send(embed=regEmb)
+                await ctx.send(f'{member.mention} - тебя зарегистрировали!')
+        except Exception as err:
+            print (err)
 
     @commands.command()
-    @commands.check(check_category)
+    @commands.check_any(check_tav_channel, check_battle_channel)
     async def location(self, ctx, *args):
+        try:
+            member = ctx.message.author
 
-        if not args:
-            await ctx.send(
-                'Твоя локация - ' + self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0][0])
-        elif args[0] in self.location:
-            self.update_db('person', 'curent_loc', f'{args[0]}', f'id={ctx.message.author.id}')
-            await ctx.send(f'Локация изменина на {args[0]}')
-        else:
+            if not args:
+                await ctx.send(
+                    'Твоя локация - ' + self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0][0])
+            elif args[0] in self.location:
+                self.update_db('person', 'curent_loc', f'{args[0]}', f'id={ctx.message.author.id}')
+                unnecessaryRole = get(member.guild.roles, name=locations[loc_channel(ctx.channel.id)])
+                role = get(member.guild.roles, name=args[0])
+                await member.remove_roles(unnecessaryRole)
+                await member.add_roles(role)
+                await ctx.send(f'Локация изменина на {args[0]}')
+            else:
 
-            temp_for_writing = ''
-            for i in range(len(self.location)):
-                temp_for_writing += f'\n {i + 1}.' + self.location[i]
-            await ctx.send('Нет такой локации, список доступных локаций:' + temp_for_writing)
+                temp_for_writing = ''
+                for i in range(len(self.location)):
+                    temp_for_writing += f'\n {i + 1}.' + self.location[i]
+                await ctx.send('Нет такой локации, список доступных локаций:' + temp_for_writing)
+        except Exception as err:
+            print(err)
 
     @commands.command()
-    @commands.check(check_category)
+    @commands.check_any(check_reg_channel, check_tav_channel, check_battle_channel)
     async def profile(self, ctx):
         try:
             data = self.read_db('*', f'person where id = {ctx.message.author.id}')[0]
@@ -103,7 +111,7 @@ class Game(commands.Cog, WWDB):
             print(err)
 
     @commands.command()
-    @commands.check(check_category)
+    @commands.check(check_battle_channel)
     async def cripBattle(self, ctx):  # недоделанно
         try:
             count = 1
