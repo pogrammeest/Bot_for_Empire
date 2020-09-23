@@ -3,10 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
-*.so
-sql.sqlite
-sqllit3_python.py
+
 # Distribution / packaging
 .Python
 build/
@@ -56,11 +53,7 @@ coverage.xml
 *.mo
 *.pot
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+
 
 # Flask stuff:
 instance/
