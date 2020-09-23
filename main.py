@@ -1,6 +1,6 @@
 ''' Основной файл в который будем импортировать sql'''
 
-import discord, os
+import discord, os, time
 from discord.ext import commands
 from discord.utils import get
 import variables
@@ -49,8 +49,10 @@ class Game(commands.Cog, WWDB):
         return commands.check(predicate)
 
     def check_on_rest():
-        def predicate(self, ctx):
-            return ctx.guild is not None and self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0] != 0
+        def predicate(ctx):
+            member = ctx.message.author
+            sleepRole = get(ctx.guild.roles, name='сон')
+            return ctx.guild is not None and sleepRole not in member.roles
 
         return commands.check(predicate)
 
@@ -69,12 +71,14 @@ class Game(commands.Cog, WWDB):
             mainRole = get(member.guild.roles, name="игрок")
             role = get(member.guild.roles, name="таверна")  # получаем нужную роль
 
-            if not self.check_db('person', f'id = {ctx.message.author.id}') == False:  # проверка существует ли у этот пользователь в базе данных
+            if self.check_db('person',
+                             f'id = {ctx.message.author.id}') == False:  # проверка существует ли у этот пользователь в базе данных
                 await ctx.send(f'{member.mention} - ты уже зарегистрирован!')
 
             else:
-                self.enter_db('person(id,name,HP,LVL,curent_loc,inventory_weapons,inventory_armor,in_hand,on_body,XP,on_rest)',
-                              (int(member.id), member.name, 10, 1, 1, '1', '1', 1, 1, 0, 0))
+                self.enter_db(
+                    'person(id,name,HP,LVL,curent_loc,inventory_weapons,inventory_armor,in_hand,on_body,XP,on_rest)',
+                    (int(member.id), member.name, 10, 1, 'таверна', '1', '1', 1, 1, 0, 0))
                 print(f'Роль {role} добавленна юзеру {member}!')
                 await member.add_roles(mainRole)
                 await member.add_roles(role)
@@ -85,6 +89,7 @@ class Game(commands.Cog, WWDB):
             print(err)
 
     @commands.command()
+    @check_on_rest()
     @commands.check_any(check_tav_channel(), check_battle_channel())
     async def location(self, ctx, *args):
         try:
@@ -129,6 +134,7 @@ class Game(commands.Cog, WWDB):
             print(err)
 
     @commands.command()
+    @check_on_rest()
     @commands.check_any(check_battle_channel())
     async def crip_battle(self, ctx):  # недоделанно
         try:
@@ -140,6 +146,7 @@ class Game(commands.Cog, WWDB):
 
             person_LVL = data[0][3]
             person_HP = data[0][2]
+            crip_LVL = person_LVL - 1
 
             person_weapon = data[0][7]
             damage = self.read_db('damage', f'weapons where id = {person_weapon}')[0]
@@ -147,77 +154,100 @@ class Game(commands.Cog, WWDB):
             person_armor = data[0][8]
             protection = self.read_db('protection', f'armor where id = {person_armor}')[0]
 
-            crip_LVL = person_LVL - 1
-            if crip_LVL == 0:
-                crip_damage = 1
-                crip_HP = int(person_HP / 2)
+            description = self.read_db('description', f'mobs where id = {crip_LVL + 1}')[0]
+            if person_HP < 0:
+                await ctx.send('Вы мерты, отдохните в таверне!')
+            else:
+                if crip_LVL == 0:
+                    crip_damage = 1
+                    crip_HP = int(person_HP / 2)
 
-                display_battle.add_field(
-                    name=f'Характеристики преред игрой:',
-                    value=f"Твоё хп: `{person_HP}`\nХп крипа: `{crip_HP}`",
-                    inline=False)
+                    display_battle.add_field(
+                        name=f'Характеристики преред игрой:',
+                        value=f"Твоё хп: `{person_HP}`\nХп крипа: `{crip_HP}`",
+                        inline=False)
 
-                damage_itog = round(random.uniform(0.5, 2.0) * damage, 2)
+                    damage_itog = round(random.uniform(0.5, 2.0) * damage, 2)
 
-                damage_itog_person = round(
-                    (round(random.uniform(0.5, 2.0), 2) * crip_damage) - (protection * damage_itog), 2)
-
-                display_battle.add_field(
-                    name=f'Характеристики на ход {count}:',
-                    value=f"Твоё хп: `{person_HP}` - `{damage_itog_person}`:drop_of_blood:\nХп крипа: `{crip_HP}`-`{damage_itog}`:drop_of_blood:",
-                    inline=False)
-
-                crip_HP -= damage_itog
-
-                person_HP -= round(damage_itog_person, 2)
-
-                while True:
-                    count += 1
                     damage_itog_person = round(
                         (round(random.uniform(0.5, 2.0), 2) * crip_damage) - (protection * damage_itog), 2)
-                    damage_itog = round(random.uniform(0.5, 2.0) * damage, 2)
 
                     display_battle.add_field(
                         name=f'Характеристики на ход {count}:',
-                        value=f"Твоё хп: `{person_HP}`-`{damage_itog_person}`:drop_of_blood:\nХп крипа: `{crip_HP}`-`{damage_itog}`:drop_of_blood:",
+                        value=f"Твоё хп: `{person_HP}` - `{damage_itog_person}`:drop_of_blood:\nХп крипа: `{crip_HP}`-`{damage_itog}`:drop_of_blood:",
                         inline=False)
 
-                    person_HP -= damage_itog_person
-                    person_HP = round(person_HP, 2)
-
                     crip_HP -= damage_itog
-                    crip_HP = round(crip_HP, 2)
 
-                    if crip_HP < 0:
+                    person_HP -= round(damage_itog_person, 2)
+
+                    while True:
+                        count += 1
+                        damage_itog_person = round(
+                            (round(random.uniform(0.5, 2.0), 2) * crip_damage) - (protection * damage_itog), 2)
+                        damage_itog = round(random.uniform(0.5, 2.0) * damage, 2)
+
                         display_battle.add_field(
-                            name=f'Ты выиграл!',
-                            value=f"Твоё хп оставшеесе хп: `{person_HP}`",
+                            name=f'Характеристики на ход {count}:',
+                            value=f"Твоё хп: `{person_HP}`-`{damage_itog_person}`:drop_of_blood:\nХп крипа: `{crip_HP}`-`{damage_itog}`:drop_of_blood:",
                             inline=False)
-                        break
-                    elif person_HP < 0:
-                        display_battle.add_field(
-                            name=f'Ты проиграл',
-                            value=f" Оставшеесе хп крипа: `{crip_HP}`",
-                            inline=False)
-                        break
-                await ctx.send(embed=display_battle)
+
+                        person_HP -= damage_itog_person
+                        person_HP = round(person_HP, 2)
+
+                        crip_HP -= damage_itog
+                        crip_HP = round(crip_HP, 2)
+
+                        if crip_HP < 0:
+                            display_battle.add_field(
+                                name=f'Ты выиграл! \n {description}',
+                                value=f"Твоё хп оставшеесе хп: `{person_HP}`",
+                                inline=False,
+                            )
+                            break
+                        elif person_HP < 0:
+                            display_battle.add_field(
+                                name=f'Ты проиграл и остался в этой локации, как призрак. Отнеси своё тело в таверну и отдохни',
+                                value=f" Оставшеесе хп крипа: `{crip_HP}`",
+                                inline=False)
+                            break
+                    self.update_db('person', 'HP', person_HP, f'id={ctx.message.author.id}')
+                    await ctx.send(embed=display_battle)
             # нужно реалезовать синхронную функцию боя
 
         except Exception as err:
             print(err)
 
-
     @commands.command()
     @commands.check_any(check_tav_channel())
     async def rest(self, ctx):
+        try:
+            member = ctx.message.author
+            sleepRole = get(member.guild.roles, name="сон")
+            data = self.read_db('*', f'person where id = {ctx.message.author.id}')[0]
+            player_HP = data[2]
+            player_LVL = data[3]
+            on_rest = data[10]
+            if on_rest == 0:
+                self.update_db('person', 'on_rest', time.time(), f'id={ctx.message.author.id}')
+                await member.add_roles(sleepRole)
+                await ctx.send(
+                    f'Вы легли на отдых в таверне! Отдах полностью залечит раны через {round(player_LVL * 10 - player_HP)} секунд. Не забудьте сдать ключи перед битвой!')
+            else:
+                regeneratedHP = time.time() - on_rest + player_HP
+                if regeneratedHP > player_LVL * 10:
+                    self.update_db('person', 'HP', player_LVL * 10, f'id={ctx.message.author.id}')
+                    self.update_db('person', 'on_rest', 0, f'id={ctx.message.author.id}')
+                    await ctx.send(f'Вы хорошо поспали, теперь ваши хп равны {round(player_LVL * 10)}! Удачи в новом бою!')
+                else:
+                    self.update_db('person', 'HP', regeneratedHP, f'id={ctx.message.author.id}')
+                    self.update_db('person', 'on_rest', 0, f'id={ctx.message.author.id}')
+                    await ctx.send(f'Вы хорошо поспали, теперь ваши хп равны {round(regeneratedHP)}! Удачи в новом бою!')
+                await member.remove_roles(sleepRole)
 
-        data = self.read_db('*', f'person where id = {ctx.message.author.id}')[0]
 
-        person_HP = data[0][2]
-
-        self.update_db('person', 'on_rest', 'something else', f'id={ctx.message.author.id}')
-
-
+        except Exception as err:
+            print(err)
 
 
 def main():

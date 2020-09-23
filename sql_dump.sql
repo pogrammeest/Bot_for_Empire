@@ -45,3 +45,8 @@ CREATE TABLE locations(
     max_lvl INTEGER NOT NULL
 );
 
+CREATE TABLE mobs(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    description TEXT
+)
+
