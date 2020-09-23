@@ -7,11 +7,7 @@ helpEmb.set_author(name='Список команд',
 helpEmb.add_field(name='Обычные команды',
                   value="`hello`")
 helpEmb.add_field(name="Комманды для игры",
-<<<<<<< HEAD
                   value="`register`, `players_list`, `location`, `profile`")
-=======
-                  value="`register`, `players_list`")
->>>>>>> 3462ac52d5fc3c7b55a5a11109b7a7f03f3f227e
 
 regEmb = discord.Embed(title='Великая GameName', colour=discord.Colour.from_rgb(150, 206, 214))
 regEmb.set_author(name="Злой ГМ",
