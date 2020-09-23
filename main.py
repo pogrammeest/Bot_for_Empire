@@ -86,7 +86,7 @@ class Game(commands.Cog, WWDB):
 
             if not args:
                 await ctx.send(
-                    'Твоя локация - ' + self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0][0])
+                    'Твоя локация - ' + self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0])
             elif args[0] in self.location:
                 self.update_db('person', 'curent_loc', f'{args[0]}', f'id={ctx.message.author.id}')
                 unnecessaryRole = get(member.guild.roles, name=locations[loc_channel(ctx.channel.id)])
@@ -141,6 +141,9 @@ class Game(commands.Cog, WWDB):
             protection = self.read_db('protection', f'armor where id = {person_armor}')[0]
 
             crip_LVL = person_LVL - 1
+
+            description = self.read_db('description', 'mobs')
+
             if crip_LVL == 0:
                 crip_damage = 1
                 crip_HP = int(person_HP / 2)
@@ -183,9 +186,10 @@ class Game(commands.Cog, WWDB):
 
                     if crip_HP < 0:
                         display_battle.add_field(
-                            name=f'Ты выиграл!',
+                            name=f'Ты выиграл! \n {description}',
                             value=f"Твоё хп оставшеесе хп: `{person_HP}`",
-                            inline=False)
+                            inline=False,
+                        )
                         break
                     elif person_HP < 0:
                         display_battle.add_field(

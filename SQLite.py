@@ -31,6 +31,15 @@ class WWDB():
         self.curs.execute(f"UPDATE {table_name} SET {coloumn_name} = '{values}' WHERE {where}")
         self.conn.commit()
 
+    def check_db(self, table_name, where):
+        self.curs.execute(f"select * from {table_name} WHERE {where}")
+        rows = self.curs.fetchall()
+        if rows is None:
+            return False
+        else:
+            return True
+
+
 
 if __name__ == '__main__':
     obj = WWDB()
@@ -40,4 +49,6 @@ if __name__ == '__main__':
     #obj.update_db('person', 'i nventory_armor', '0', 'id=259316355537305604')
     #print(obj.read_db('*', 'locations'))
     # obj.delete_db('person', 'id=1243456346534')
-    print(obj.read_db('curent_loc', f'person where id = 259316355537305604'))
+    #print(obj.read_db('curent_loc', f'person where id = 259316355537305604'))
+
+    #obj.check_db('locations','id=1' )
