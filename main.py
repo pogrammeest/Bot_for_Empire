@@ -48,6 +48,12 @@ class Game(commands.Cog, WWDB):
 
         return commands.check(predicate)
 
+    def check_on_rest():
+        def predicate(self, ctx):
+            return ctx.guild is not None and self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0] != 0
+
+        return commands.check(predicate)
+
     @commands.command()
     @commands.check_any(check_reg_channel(), check_tav_channel())
     async def players_list(self, ctx):  # Пример просмотра листа зарегестрированных пользователей
@@ -63,12 +69,12 @@ class Game(commands.Cog, WWDB):
             mainRole = get(member.guild.roles, name="игрок")
             role = get(member.guild.roles, name="таверна")  # получаем нужную роль
 
-            if get(member.roles, name='игрок'):  # проверка существует ли у этого пользователя роль
+            if not self.check_db('person', f'id = {ctx.message.author.id}') == False:  # проверка существует ли у этот пользователь в базе данных
                 await ctx.send(f'{member.mention} - ты уже зарегистрирован!')
 
             else:
-                self.enter_db('person(id,name,HP,LVL,curent_loc,inventory_weapons,inventory_armor,in_hand,on_body,XP)',
-                              (int(member.id), member.name, 10, 1, 1, '1', '1', 1, 1, 0))
+                self.enter_db('person(id,name,HP,LVL,curent_loc,inventory_weapons,inventory_armor,in_hand,on_body,XP,on_rest)',
+                              (int(member.id), member.name, 10, 1, 1, '1', '1', 1, 1, 0, 0))
                 print(f'Роль {role} добавленна юзеру {member}!')
                 await member.add_roles(mainRole)
                 await member.add_roles(role)
@@ -88,9 +94,10 @@ class Game(commands.Cog, WWDB):
                 await ctx.send(
                     'Твоя локация - ' + self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0])
             elif args[0] in self.location:
-                self.update_db('person', 'curent_loc', f'{args[0]}', f'id={ctx.message.author.id}')
-                unnecessaryRole = get(member.guild.roles, name=locations[loc_channel(ctx.channel.id)])
+                unnecessaryRole = get(member.guild.roles,
+                                      name=self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0])
                 role = get(member.guild.roles, name=args[0])
+                self.update_db('person', 'curent_loc', f'{args[0]}', f'id={ctx.message.author.id}')
                 await member.remove_roles(unnecessaryRole)
                 await member.add_roles(role)
                 await ctx.send(f'Локация изменина на {args[0]}')
@@ -198,6 +205,19 @@ class Game(commands.Cog, WWDB):
 
         except Exception as err:
             print(err)
+
+
+    @commands.command()
+    @commands.check_any(check_tav_channel())
+    async def rest(self, ctx):
+
+        data = self.read_db('*', f'person where id = {ctx.message.author.id}')[0]
+
+        person_HP = data[0][2]
+
+        self.update_db('person', 'on_rest', 'something else', f'id={ctx.message.author.id}')
+
+
 
 
 def main():
