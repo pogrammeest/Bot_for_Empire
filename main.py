@@ -86,7 +86,7 @@ class Game(commands.Cog, WWDB):
 
             if not args:
                 await ctx.send(
-                    'Твоя локация - ' + self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0][0])
+                    'Твоя локация - ' + self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0])
             elif args[0] in self.location:
                 self.update_db('person', 'curent_loc', f'{args[0]}', f'id={ctx.message.author.id}')
                 unnecessaryRole = get(member.guild.roles, name=locations[loc_channel(ctx.channel.id)])
