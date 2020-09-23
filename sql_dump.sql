@@ -1,9 +1,9 @@
 PRAGMA FOREIGN_KEYS=ON;
 
-drop table person;--это можно потом убрать, нужно, чтоб не прописывать руками
-drop table weapons;--при каждом чтении дампа
-drop table armor;
-drop table locations;
+drop table IF EXISTS person;--это можно потом убрать, нужно, чтоб не прописывать руками
+drop table IF EXISTS weapons;--при каждом чтении дампа
+drop table IF EXISTS armor;
+drop table IF EXISTS locations;
 
 CREATE TABLE person(
     id INTEGER PRIMARY KEY,
@@ -16,6 +16,7 @@ CREATE TABLE person(
     in_hand INTEGER NOT NULL ,--текущее оружие в руках
     on_body INTEGER NOT NULL ,--текущая броня
     XP REAL NOT NULL,
+    on_rest DATETIME NOT NULL,
     FOREIGN KEY (curent_loc) REFERENCES locations(id),
     FOREIGN KEY (in_hand) REFERENCES weapons(id),
     FOREIGN KEY (on_body) REFERENCES armor(id)
@@ -43,4 +44,9 @@ CREATE TABLE locations(
     name VARCHAR(255) NOT NULL UNIQUE,
     max_lvl INTEGER NOT NULL
 );
+
+CREATE TABLE mobs(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    description TEXT
+)
 
