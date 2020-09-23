@@ -27,7 +27,7 @@ class WWDB():
         self.curs.execute(f"DELETE FROM {table_name} WHERE {where}")
         self.conn.commit()
 
-    def update_db(self, table_name, coloumn_name, values, where):
+    def update_db(self, table_name, coloumn_name, values, where): # метод обновления значения
         self.curs.execute(f"UPDATE {table_name} SET {coloumn_name} = '{values}' WHERE {where}")
         self.conn.commit()
 
