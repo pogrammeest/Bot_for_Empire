@@ -30,45 +30,56 @@ class Game(commands.Cog, WWDB):
         self.bot = bot
         self.location = [i[1] for i in self.read_db('*', 'locations')]
 
-    def check_reg_channel(ctx):  # функция для декоратора проверки канала регистрации
-        return ctx.channel.id == 753268164833443841
+    def check_reg_channel():  # функция для декоратора проверки канала регистрации
+        def predicate(ctx):
+            return ctx.guild is not None and ctx.channel.id == 753268164833443841
 
-    def check_tav_channel(ctx):  # функция для декоратора проверки канала тавнерны
-        return loc_channel(ctx.channel.id) == 0
+        return commands.check(predicate)
 
-    def check_battle_channel(ctx):  # функция для декоратора проверки канала боевых лок
-        return loc_channel(ctx.channel.id) in [1, 2, 3, 4, 5, 6]
+    def check_tav_channel():  # функция для декоратора проверки канала тавнерны
+        def predicate(ctx):
+            return ctx.guild is not None and loc_channel(ctx.channel.id) == 0
+
+        return commands.check(predicate)
+
+    def check_battle_channel():  # функция для декоратора проверки канала боевых лок
+        def predicate(ctx):
+            return ctx.guild is not None and loc_channel(ctx.channel.id) in [1, 2, 3, 4, 5, 6]
+
+        return commands.check(predicate)
 
     @commands.command()
-    @commands.check_any(check_reg_channel, check_tav_channel)
+    @commands.check_any(check_reg_channel(), check_tav_channel())
     async def players_list(self, ctx):  # Пример просмотра листа зарегестрированных пользователей
         data = self.read_db('*', 'person')
         await ctx.send(
             'OK, {0}. Вот твои пользователи:\n {1}'.format(ctx.message.author.mention, data))
 
     @commands.command()
-    @commands.check(check_reg_channel)
+    @commands.check_any(check_reg_channel())
     async def register(self, ctx):  # Регистрация пользователей
         try:
             member = ctx.message.author
+            mainRole = get(member.guild.roles, name="игрок")
             role = get(member.guild.roles, name="таверна")  # получаем нужную роль
 
-            if get(member.roles, name='test_role'):  # проверка существует ли у этого пользователя роль
+            if get(member.roles, name='игрок'):  # проверка существует ли у этого пользователя роль
                 await ctx.send(f'{member.mention} - ты уже зарегистрирован!')
 
             else:
                 self.enter_db('person(id,name,HP,LVL,curent_loc,inventory_weapons,inventory_armor,in_hand,on_body,XP)',
                               (int(member.id), member.name, 10, 1, 1, '1', '1', 1, 1, 0))
                 print(f'Роль {role} добавленна юзеру {member}!')
+                await member.add_roles(mainRole)
                 await member.add_roles(role)
                 await member.create_dm()
                 await member.dm_channel.send(embed=regEmb)
                 await ctx.send(f'{member.mention} - тебя зарегистрировали!')
         except Exception as err:
-            print (err)
+            print(err)
 
     @commands.command()
-    @commands.check_any(check_tav_channel, check_battle_channel)
+    @commands.check_any(check_tav_channel(), check_battle_channel())
     async def location(self, ctx, *args):
         try:
             member = ctx.message.author
@@ -93,7 +104,7 @@ class Game(commands.Cog, WWDB):
             print(err)
 
     @commands.command()
-    @commands.check_any(check_reg_channel, check_tav_channel, check_battle_channel)
+    @commands.check_any(check_reg_channel(), check_tav_channel(), check_battle_channel())
     async def profile(self, ctx):
         try:
             data = self.read_db('*', f'person where id = {ctx.message.author.id}')[0]
@@ -111,8 +122,8 @@ class Game(commands.Cog, WWDB):
             print(err)
 
     @commands.command()
-    @commands.check(check_battle_channel)
-    async def cripBattle(self, ctx):  # недоделанно
+    @commands.check_any(check_battle_channel())
+    async def crip_battle(self, ctx):  # недоделанно
         try:
             count = 1
             display_battle = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
