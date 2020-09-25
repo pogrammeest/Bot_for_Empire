@@ -48,7 +48,7 @@ class Game(commands.Cog, WWDB):
 
         return commands.check(predicate)
 
-    def check_on_rest():
+    def check_on_rest():  # функция для декоратора проверки спит персонаж или нет
         def predicate(ctx):
             member = ctx.message.author
             sleepRole = get(ctx.guild.roles, name='сон')
@@ -78,11 +78,11 @@ class Game(commands.Cog, WWDB):
             else:
                 self.enter_db(
                     'person(id,name,HP,LVL,curent_loc,inventory_weapons,inventory_armor,in_hand,on_body,XP,on_rest)',
-                    (int(member.id), member.name, 10, 1, 'таверна', '1', '1', 1, 1, 0, 0))
+                    (int(member.id), member.name, 10, 1, 'таверна', '1', '1', 1, 1, 0, 0)) # добавление нового игрока в БД
                 print(f'Роль {role} добавленна юзеру {member}!')
-                await member.add_roles(mainRole)
-                await member.add_roles(role)
-                await member.create_dm()
+                await member.add_roles(mainRole)    # выдача роли "игрок"
+                await member.add_roles(role)    # выдача роли начальной локации
+                await member.create_dm()    # личные сообщение с пользователем
                 await member.dm_channel.send(embed=regEmb)
                 await ctx.send(f'{member.mention} - тебя зарегистрировали!')
         except Exception as err:
@@ -94,24 +94,22 @@ class Game(commands.Cog, WWDB):
     async def location(self, ctx, *args):
         try:
             member = ctx.message.author
+            allLocations = ''
+            for i in range(len(self.location)):
+                allLocations += f'\n {i + 1}.' + self.location[i]
+            nowRole = get(member.guild.roles,
+                                  name=self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0])
 
             if not args:
-                await ctx.send(
-                    'Твоя локация - ' + self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0])
+                await ctx.send(f'Ваша локация - {nowRole}.\nНо вы можете переместиться в: {allLocations}')
             elif args[0] in self.location:
-                unnecessaryRole = get(member.guild.roles,
-                                      name=self.read_db('curent_loc', f'person where id = {ctx.message.author.id}')[0])
-                role = get(member.guild.roles, name=args[0])
+                needRole = get(member.guild.roles, name=args[0])
                 self.update_db('person', 'curent_loc', f'{args[0]}', f'id={ctx.message.author.id}')
-                await member.remove_roles(unnecessaryRole)
-                await member.add_roles(role)
+                await member.remove_roles(nowRole)  # удаление настоящей роли
+                await member.add_roles(needRole)   # добавление новой роли
                 await ctx.send(f'Локация изменина на {args[0]}')
             else:
-
-                temp_for_writing = ''
-                for i in range(len(self.location)):
-                    temp_for_writing += f'\n {i + 1}.' + self.location[i]
-                await ctx.send('Нет такой локации, список доступных локаций:' + temp_for_writing)
+                await ctx.send(f'Нет такой локации, список доступных локаций:{allLocations}')
         except Exception as err:
             print(err)
 
@@ -211,7 +209,7 @@ class Game(commands.Cog, WWDB):
                                 value=f" Оставшеесе хп крипа: `{crip_HP}`",
                                 inline=False)
                             break
-                    self.update_db('person', 'HP', person_HP, f'id={ctx.message.author.id}')
+                    self.update_db('person', 'HP', person_HP, f'id={ctx.message.author.id}') # обновление HP после битвы
                     await ctx.send(embed=display_battle)
             # нужно реалезовать синхронную функцию боя
 
@@ -227,22 +225,20 @@ class Game(commands.Cog, WWDB):
             data = self.read_db('*', f'person where id = {ctx.message.author.id}')[0]
             player_HP = data[2]
             player_LVL = data[3]
+            maxHP = player_LVL * 10
             on_rest = data[10]
-            if on_rest == 0:
+            if on_rest == 0: # первое использование команды - лечь спать
                 self.update_db('person', 'on_rest', time.time(), f'id={ctx.message.author.id}')
                 await member.add_roles(sleepRole)
                 await ctx.send(
-                    f'Вы легли на отдых в таверне! Отдах полностью залечит раны через {round(player_LVL * 10 - player_HP)} секунд. Не забудьте сдать ключи перед битвой!')
-            else:
-                regeneratedHP = time.time() - on_rest + player_HP
-                if regeneratedHP > player_LVL * 10:
-                    self.update_db('person', 'HP', player_LVL * 10, f'id={ctx.message.author.id}')
-                    self.update_db('person', 'on_rest', 0, f'id={ctx.message.author.id}')
-                    await ctx.send(f'Вы хорошо поспали, теперь ваши хп равны {round(player_LVL * 10)}! Удачи в новом бою!')
-                else:
-                    self.update_db('person', 'HP', regeneratedHP, f'id={ctx.message.author.id}')
-                    self.update_db('person', 'on_rest', 0, f'id={ctx.message.author.id}')
-                    await ctx.send(f'Вы хорошо поспали, теперь ваши хп равны {round(regeneratedHP)}! Удачи в новом бою!')
+                    f'Вы легли на отдых в таверне! Отдых полностью залечит раны через {round(maxHP - player_HP)} секунд. Не забудьте сдать ключи перед битвой!')
+            else:  # второе использование команды - выйти из режима лечения
+                regeneratedHP = time.time() - on_rest + player_HP # отхиленное HP
+                if regeneratedHP > maxHP: # если реген больше максимального HP
+                    regeneratedHP = maxHP
+                self.update_db('person', 'HP', round(regeneratedHP, 2), f'id={ctx.message.author.id}')  # обновление HP
+                self.update_db('person', 'on_rest', 0, f'id={ctx.message.author.id}')  # обнуление on_rest для повторного использования команды
+                await ctx.send(f'Вы хорошо поспали, теперь ваши хп равны {round(regeneratedHP, 2)}! Удачи в новом бою!')
                 await member.remove_roles(sleepRole)
 
 
