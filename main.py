@@ -31,20 +31,20 @@ class Game(commands.Cog, WWDB):
         self.location = [i[1] for i in self.read_db('*', 'locations')]
 
     def battle_reward(self, lvl, id):
-        category = ['armor', 'weapons']
-        rareChance = [10, 3, 1]
-        now_category = random.choice(category)
-        things = self.read_db('*', f'{now_category} where LVL = {lvl}')
-        reward = random.choices(things, rareChance, k=1)
+        category = ['armor', 'weapons']  # список категорий выпадаемого лута
+        rareChance = [10, 3, 1]  # редкость предметов
+        now_category = random.choice(category)  # выбор категории
+        things = self.read_db('*', f'{now_category} where LVL = {lvl}')  # выбор предметов необходимого уровня
+        reward = random.choices(things, rareChance, k=1)  # выбор награды по редкости
 
         newInventory = f"{self.read_db(f'inventory_{now_category}', f'person where id = {id}')[0]}, {reward[0][0]}"
-        self.update_db('person', f'inventory_{now_category}', newInventory, f'id = {id}')
+        self.update_db('person', f'inventory_{now_category}', newInventory, f'id = {id}')  # обновление инвентаря
 
-        newXP = int(self.read_db(f'XP', f'person where id = {id}')[0]) + lvl*5
-        self.update_db('person', f'XP', newXP, f'id = {id}')
-        if newXP > lvl*(lvl+1)/2*100:
-            self.update_db('person', f'LVL', lvl+1, f'id = {id}')
-        return f'Вы выбили {reward[0][1]} и {lvl*5} опыта. Для дополнительной информации загляните в инвентарь!'
+        newXP = int(self.read_db(f'XP', f'person where id = {id}')[0]) + lvl * 5
+        self.update_db('person', f'XP', newXP, f'id = {id}')  # обновление опыта
+        if newXP > lvl * (lvl + 1) / 2 * 100:  # треугольные числа для подсчётна и обновления уровня
+            self.update_db('person', f'LVL', lvl + 1, f'id = {id}')
+        return f'Вы выбили {reward[0][1]} и {lvl * 5} опыта. Для дополнительной информации загляните в инвентарь!'
 
     def check_battle_channel():  # функция для декоратора проверки канала боевых лок
         def predicate(ctx):
@@ -143,7 +143,7 @@ class Game(commands.Cog, WWDB):
                             display_battle.add_field(
                                 name=f'Ты выиграл! \n {description}',
                                 value=f"Твоё хп оставшеесе хп: `{person_HP}`\n"
-                                      f"{self.battle_reward(person_LVL, data[0][0])}",
+                                      f"{self.battle_reward(person_LVL, data[0][0])}",  # сообщение о выпавшем луте
                                 inline=False,
                             )
                             break
@@ -249,11 +249,12 @@ class Game(commands.Cog, WWDB):
         data = self.read_db('*', 'person')
         playersList = ''
         j = 1
-        for i in range(len(data)):
+        for i in range(len(data)):  # создание списков людей в локациях
             if loc_channel[ctx.channel.id] in [0, 1, 2, 3, 4, 5, 6] and loc_channel[data[i][4]] == loc_channel[
+                # отдельная локация
                 ctx.channel.id]:
                 playersList += f'{j}. {data[i][1]}, {data[i][3]}LVL.\n'
-            elif loc_channel[ctx.channel.id] == -1:
+            elif loc_channel[ctx.channel.id] == -1:  # общий канал
                 playersList += f'{j}. {data[i][1]}\n'
             else:
                 pass
