@@ -30,9 +30,25 @@ class Game(commands.Cog, WWDB):
         self.bot = bot
         self.location = [i[1] for i in self.read_db('*', 'locations')]
 
+    def battle_reward(self, lvl, id):
+        category = ['armor', 'weapons']
+        rareChance = [10, 3, 1]
+        now_category = random.choice(category)
+        things = self.read_db('*', f'{now_category} where LVL = {lvl}')
+        reward = random.choices(things, rareChance, k=1)
+
+        newInventory = f"{self.read_db(f'inventory_{now_category}', f'person where id = {id}')[0]}, {reward[0][0]}"
+        self.update_db('person', f'inventory_{now_category}', newInventory, f'id = {id}')
+
+        newXP = int(self.read_db(f'XP', f'person where id = {id}')[0]) + lvl*5
+        self.update_db('person', f'XP', newXP, f'id = {id}')
+        if newXP > lvl*(lvl+1)/2*100:
+            self.update_db('person', f'LVL', lvl+1, f'id = {id}')
+        return f'Вы выбили {reward[0][1]} и {lvl*5} опыта. Для дополнительной информации загляните в инвентарь!'
+
     def check_battle_channel():  # функция для декоратора проверки канала боевых лок
         def predicate(ctx):
-            return ctx.guild is not None and loc_channel(ctx.channel.id) in [1, 2, 3, 4, 5, 6]
+            return ctx.guild is not None and loc_channel[ctx.channel.id] in [1, 2, 3, 4, 5, 6]
 
         return commands.check(predicate)
 
@@ -46,13 +62,13 @@ class Game(commands.Cog, WWDB):
 
     def check_reg_channel():  # функция для декоратора проверки канала регистрации
         def predicate(ctx):
-            return ctx.guild is not None and ctx.channel.id == 753268164833443841
+            return ctx.guild is not None and loc_channel[ctx.channel.id] == -1
 
         return commands.check(predicate)
 
     def check_tav_channel():  # функция для декоратора проверки канала тавнерны
         def predicate(ctx):
-            return ctx.guild is not None and loc_channel(ctx.channel.id) == 0
+            return ctx.guild is not None and loc_channel[ctx.channel.id] == 0
 
         return commands.check(predicate)
 
@@ -126,7 +142,8 @@ class Game(commands.Cog, WWDB):
                         if crip_HP < 0:
                             display_battle.add_field(
                                 name=f'Ты выиграл! \n {description}',
-                                value=f"Твоё хп оставшеесе хп: `{person_HP}`",
+                                value=f"Твоё хп оставшеесе хп: `{person_HP}`\n"
+                                      f"{self.battle_reward(person_LVL, data[0][0])}",
                                 inline=False,
                             )
                             break
@@ -227,11 +244,22 @@ class Game(commands.Cog, WWDB):
             print(err)
 
     @commands.command()
-    @commands.check_any(check_reg_channel(), check_tav_channel())
+    @commands.check_any(check_reg_channel(), check_tav_channel(), check_battle_channel())
     async def players_list(self, ctx):  # Пример просмотра листа зарегестрированных пользователей
         data = self.read_db('*', 'person')
+        playersList = ''
+        j = 1
+        for i in range(len(data)):
+            if loc_channel[ctx.channel.id] in [0, 1, 2, 3, 4, 5, 6] and loc_channel[data[i][4]] == loc_channel[
+                ctx.channel.id]:
+                playersList += f'{j}. {data[i][1]}, {data[i][3]}LVL.\n'
+            elif loc_channel[ctx.channel.id] == -1:
+                playersList += f'{j}. {data[i][1]}\n'
+            else:
+                pass
+            j += 1
         await ctx.send(
-            'OK, {0}. Вот твои пользователи:\n {1}'.format(ctx.message.author.mention, data))
+            'OK, {0}. Вот все путешественники в данной локации:\n{1}'.format(ctx.message.author.mention, playersList))
 
     @commands.command()
     @commands.check_any(check_reg_channel(), check_tav_channel(), check_battle_channel())
