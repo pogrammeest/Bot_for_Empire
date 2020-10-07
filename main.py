@@ -98,64 +98,51 @@ class Game(commands.Cog, WWDB):
             if person_HP < 0:
                 await ctx.send('Вы мерты, отдохните в таверне!')
             else:
-                if crip_LVL == 0:
-                    crip_damage = 1
-                    crip_HP = int(person_HP / 2)
+                crip_damage = 1
+                crip_HP = person_LVL * 5
 
-                    display_battle.add_field(
-                        name=f'Характеристики преред игрой:',
-                        value=f"Твоё хп: `{person_HP}`\nХп крипа: `{crip_HP}`",
-                        inline=False)
+                display_battle.add_field(
+                    name=f'Характеристики преред игрой:',
+                    value=f"Твоё хп: `{person_HP}`\nХп крипа: `{crip_HP}`",
+                    inline=False)
 
+                while True:
                     damage_itog = round(random.uniform(0.5, 2.0) * damage, 2)
-
                     damage_itog_person = round(
                         (round(random.uniform(0.5, 2.0), 2) * crip_damage) - (protection * damage_itog), 2)
 
+
                     display_battle.add_field(
                         name=f'Характеристики на ход {count}:',
-                        value=f"Твоё хп: `{person_HP}` - `{damage_itog_person}`:drop_of_blood:\nХп крипа: `{crip_HP}`-`{damage_itog}`:drop_of_blood:",
+                        value=f"Твоё хп: `{person_HP}`-`{damage_itog_person}`:drop_of_blood:\nХп крипа: `{crip_HP}`-`{damage_itog}`:drop_of_blood:",
                         inline=False)
-
-                    crip_HP -= damage_itog
 
                     person_HP -= damage_itog_person
                     person_HP = round(person_HP, 2)
 
-                    while True:
-                        count += 1
-                        damage_itog_person = round(
-                            (round(random.uniform(0.5, 2.0), 2) * crip_damage) - (protection * damage_itog), 2)
-                        damage_itog = round(random.uniform(0.5, 2.0) * damage, 2)
+                    crip_HP -= damage_itog
+                    crip_HP = round(crip_HP, 2)
 
+                    if crip_HP < 0:
                         display_battle.add_field(
-                            name=f'Характеристики на ход {count}:',
-                            value=f"Твоё хп: `{person_HP}`-`{damage_itog_person}`:drop_of_blood:\nХп крипа: `{crip_HP}`-`{damage_itog}`:drop_of_blood:",
+                            name=f'Ты выиграл! \n {description}',
+                            value=f"Твоё хп оставшеесе хп: `{person_HP}`\n"
+                                  f"{self.battle_reward(person_LVL, data[0][0])}",  # сообщение о выпавшем луте
+                            inline=False,
+                        )
+                        break
+                    elif person_HP < 0:
+                        display_battle.add_field(
+                            name=f'Ты проиграл и остался в этой локации, как призрак. Отнеси своё тело в таверну и отдохни',
+                            value=f" Оставшеесе хп крипа: `{crip_HP}`",
                             inline=False)
+                        break
 
-                        person_HP -= damage_itog_person
-                        person_HP = round(person_HP, 2)
+                    count += 1
 
-                        crip_HP -= damage_itog
-                        crip_HP = round(crip_HP, 2)
-
-                        if crip_HP < 0:
-                            display_battle.add_field(
-                                name=f'Ты выиграл! \n {description}',
-                                value=f"Твоё хп оставшеесе хп: `{person_HP}`\n"
-                                      f"{self.battle_reward(person_LVL, data[0][0])}",  # сообщение о выпавшем луте
-                                inline=False,
-                            )
-                            break
-                        elif person_HP < 0:
-                            display_battle.add_field(
-                                name=f'Ты проиграл и остался в этой локации, как призрак. Отнеси своё тело в таверну и отдохни',
-                                value=f" Оставшеесе хп крипа: `{crip_HP}`",
-                                inline=False)
-                            break
-                    self.update_db('person', 'HP', person_HP,
-                                   f'id={ctx.message.author.id}')  # обновление HP после битвы
-                    await ctx.send(embed=display_battle)
+                self.update_db('person', 'HP', person_HP,
+                               f'id={ctx.message.author.id}')  # обновление HP после битвы
+                await ctx.send(embed=display_battle)
             # нужно реалезовать синхронную функцию боя
 
         except Exception as err:
