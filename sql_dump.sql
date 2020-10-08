@@ -4,6 +4,8 @@ drop table IF EXISTS person;--это можно потом убрать, нуж�
 drop table IF EXISTS weapons;--при каждом чтении дампа
 drop table IF EXISTS armor;
 drop table IF EXISTS locations;
+drop table IF EXISTS mobs;
+
 
 CREATE TABLE person(
     id INTEGER PRIMARY KEY,
@@ -48,5 +50,16 @@ CREATE TABLE locations(
 CREATE TABLE mobs(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     description TEXT
-)
+);
+
+insert into mobs(description) values("1");--мобы для первых 10-ти локаций ещё не готовы
+insert into mobs(description) values("2");
+insert into mobs(description) values("3");
+insert into mobs(description) values("4");
+insert into mobs(description) values("5");
+insert into mobs(description) values("6");
+insert into mobs(description) values("7");
+insert into mobs(description) values("8");
+insert into mobs(description) values("9");
+insert into mobs(description) values("10");
 
