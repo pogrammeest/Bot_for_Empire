@@ -51,7 +51,7 @@ CREATE TABLE mobs(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     description TEXT
 );
-
+--я надеюсь, что этот пиздец - временный
 insert into mobs(description) values("1");--мобы для первых 10-ти локаций ещё не готовы
 insert into mobs(description) values("2");
 insert into mobs(description) values("3");
