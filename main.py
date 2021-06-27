@@ -9,16 +9,24 @@ import sqlite3
 
 
 class Base(commands.Cog):
+    helpEmb = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
+    helpEmb.set_author(name='Список команд',
+                       icon_url='https://clipart-best.com/img/ruby/ruby-clip-art-20.png')
+    helpEmb.add_field(name='Обычные команды',
+                      value="`hello`")
+    helpEmb.add_field(name="Комманды для игры",
+                      value="`crip_battle`, `inventory`, `location`, `players_list`, `profile`, `register`, `rest`")
+
     def __init__(self, bot):  # Иницилизация для работы регистра
         self.bot = bot
 
-    # @commands.command()
+    @commands.command()
     async def hello(self, ctx):
         await ctx.send(f'Hello, {ctx.message.author.mention}!')
 
     @commands.command()
     async def help(self, ctx):
-        await ctx.send(embed=helpEmb)
+        await ctx.send(embed=self.helpEmb)
 
 
 class Game(commands.Cog, WWDB):
@@ -31,14 +39,6 @@ class Game(commands.Cog, WWDB):
                         744948528018620547: 5, 'лабиринт': 5,
                         744947464448114798: 6, 'зиккурат': 6,
                         753268164833443841: -1}  # канал регистрации
-
-    helpEmb = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
-    helpEmb.set_author(name='Список команд',
-                            icon_url='https://clipart-best.com/img/ruby/ruby-clip-art-20.png')
-    helpEmb.add_field(name='Обычные команды',
-                           value="`hello`")
-    helpEmb.add_field(name="Комманды для игры",
-                           value="`crip_battle`, `inventory`, `location`, `players_list`, `profile`, `register`, `rest`")
 
     regEmb = discord.Embed(title='Великая GameName', colour=discord.Colour.from_rgb(150, 206, 214))
     regEmb.set_author(name="Злой ГМ",
