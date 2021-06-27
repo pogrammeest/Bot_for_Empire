@@ -3,8 +3,6 @@
 import discord, os, time
 from discord.ext import commands
 from discord.utils import get
-import variables
-from variables import *
 from SQLite import WWDB
 import random
 import sqlite3
@@ -14,7 +12,7 @@ class Base(commands.Cog):
     def __init__(self, bot):  # Иницилизация для работы регистра
         self.bot = bot
 
-    @commands.command()
+    # @commands.command()
     async def hello(self, ctx):
         await ctx.send(f'Hello, {ctx.message.author.mention}!')
 
@@ -24,31 +22,43 @@ class Base(commands.Cog):
 
 
 class Game(commands.Cog, WWDB):
+
+    loc_channel = {744484105852551239: 0, 'таверна': 0,
+                        744948183242637374: 1, 'лес': 1,
+                        744483452203696160: 2, 'болото': 2,
+                        744947492923244615: 3, 'могильник': 3,
+                        744947400489173152: 4, 'цитадель': 4,
+                        744948528018620547: 5, 'лабиринт': 5,
+                        744947464448114798: 6, 'зиккурат': 6,
+                        753268164833443841: -1}  # канал регистрации
+
+    helpEmb = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
+    helpEmb.set_author(name='Список команд',
+                            icon_url='https://clipart-best.com/img/ruby/ruby-clip-art-20.png')
+    helpEmb.add_field(name='Обычные команды',
+                           value="`hello`")
+    helpEmb.add_field(name="Комманды для игры",
+                           value="`crip_battle`, `inventory`, `location`, `players_list`, `profile`, `register`, `rest`")
+
+    regEmb = discord.Embed(title='Великая GameName', colour=discord.Colour.from_rgb(150, 206, 214))
+    regEmb.set_author(name="Злой ГМ",
+                           icon_url='https://clipart-best.com/img/ruby/ruby-clip-art-20.png')
+    regEmb.add_field(name='Приветствую тебя, дорогой искатель приключений!',
+                          value="Ты попал в ванильный фэнтезийный бред. Заставим Рому это писать.",
+                          inline=False)
+    regEmb.add_field(name="Комманды для игры",
+                          value="`crip_battle`, `inventory`, `location`, `players_list`, `profile`, `register`, `rest`")
+
     def __init__(self, bot):  # Иницилизация для работы регистра
         self.conn = sqlite3.connect('sql.sqlite')
         self.curs = self.conn.cursor()
+
         self.bot = bot
         self.location = [i[1] for i in self.read_db('*', 'locations')]
 
-    def battle_reward(self, lvl, id):
-        category = ['armor', 'weapons']  # список категорий выпадаемого лута
-        rareChance = [10, 3, 1]  # редкость предметов
-        now_category = random.choice(category)  # выбор категории
-        things = self.read_db('*', f'{now_category} where LVL = {lvl}')  # выбор предметов необходимого уровня
-        reward = random.choices(things, rareChance, k=1)  # выбор награды по редкости
-
-        newInventory = f"{self.read_db(f'inventory_{now_category}', f'person where id = {id}')[0]}, {reward[0][0]}"
-        self.update_db('person', f'inventory_{now_category}', newInventory, f'id = {id}')  # обновление инвентаря
-
-        newXP = int(self.read_db(f'XP', f'person where id = {id}')[0]) + lvl * 5
-        self.update_db('person', f'XP', newXP, f'id = {id}')  # обновление опыта
-        if newXP > lvl * (lvl + 1) / 2 * 100:  # треугольные числа для подсчётна и обновления уровня
-            self.update_db('person', f'LVL', lvl + 1, f'id = {id}')
-        return f'Вы выбили {reward[0][1]} и {lvl * 5} опыта. Для дополнительной информации загляните в инвентарь!'
-
     def check_battle_channel():  # функция для декоратора проверки канала боевых лок
         def predicate(ctx):
-            return ctx.guild is not None and loc_channel[ctx.channel.id] in [1, 2, 3, 4, 5, 6]
+            return ctx.guild is not None and Game.loc_channel[ctx.channel.id] in [1, 2, 3, 4, 5, 6]
 
         return commands.check(predicate)
 
@@ -62,88 +72,128 @@ class Game(commands.Cog, WWDB):
 
     def check_reg_channel():  # функция для декоратора проверки канала регистрации
         def predicate(ctx):
-            return ctx.guild is not None and loc_channel[ctx.channel.id] == -1
+            return ctx.guild is not None and Game.loc_channel[ctx.channel.id] == -1
 
         return commands.check(predicate)
 
     def check_tav_channel():  # функция для декоратора проверки канала тавнерны
         def predicate(ctx):
-            return ctx.guild is not None and loc_channel[ctx.channel.id] == 0
+            return ctx.guild is not None and Game.loc_channel[ctx.channel.id] == 0
 
         return commands.check(predicate)
+
+    class Character(WWDB):
+        def __init__(self, lvl, hp, weapon, armor):
+            WWDB.__init__(self)
+
+            self.lvl = lvl
+            self.hp = hp
+            self.damage = self.read_db('damage', f'weapons where id = {weapon}')[0]
+            self.protection = self.read_db('protection', f'armor where id = {armor}')[0]
+
+        def remove_hp(self, damage):
+            res_hp = self.hp - damage * (1 - self.protection * 0.1)
+            if res_hp < 0:
+                self.hp = 0
+            else:
+                self.hp = round(res_hp, 2)
+
+        def move_damage(self):
+            return round(random.uniform(0.7, 1.3) * self.damage, 2)
+
+        def get_loot(self, id):
+            category = ['armor', 'weapons']  # список категорий выпадаемого лута
+            rareChance = [10, 3, 1]  # редкость предметов
+            now_category = random.choice(category)  # выбор категории
+            things = self.read_db('*', f'{now_category} where LVL = {self.lvl}')  # выбор предметов необходимого уровня
+            reward = random.choices(things, rareChance, k=1)  # выбор награды по редкости
+
+            newInventory = f"{self.read_db(f'inventory_{now_category}', f'person where id = {id}')[0]}, {reward[0][0]}"
+            self.update_db('person', f'inventory_{now_category}', newInventory, f'id = {id}')  # обновление инвентаря
+
+            newXP = int(self.read_db(f'XP', f'person where id = {id}')[0]) + self.lvl * 5
+            self.update_db('person', f'XP', newXP, f'id = {id}')  # обновление опыта
+
+            if newXP > self.lvl * (self.lvl + 1) / 2 * 100:  # треугольные числа для подсчётна и обновления уровня
+                self.update_db('person', f'LVL', self.lvl + 1, f'id = {id}')
+            return f'Вы выбили {reward[0][1]} и {self.lvl * 5} опыта. Для дополнительной информации загляните в инвентарь!'
+
+    class Crip(WWDB):
+        def __init__(self, lvl, hp, damage, protection=0.1):
+            WWDB.__init__(self)
+
+            self.lvl = lvl
+            self.hp = hp
+            self.damage = damage
+            self.protection = protection
+            self.description = self.read_db('description', f'mobs where id = {lvl}')
+
+        def remove_hp(self, damage):
+            res_hp = self.hp - damage*(1 - self.protection * 0.1)
+            if res_hp < 0:
+                self.hp = 0
+            else:
+                self.hp = round(res_hp, 2)
+
+        def move_damage(self):
+            return round(random.uniform(0.7, 1.3) * self.damage, 2)
 
     @commands.command()
     @check_on_rest()
     @commands.check_any(check_battle_channel())
-    async def crip_battle(self,
-                          ctx):  # НЕ ставить в таблице armor protection - "1"! Максимум - "0.25",  и то только для лучшей брони !
+    async def crip_battle(self, ctx):  # НЕ ставить в таблице armor protection - "1"! Максимум - "0.25",  и то только для лучшей брони !
         try:
             count = 1
+
             display_battle = discord.Embed(colour=discord.Colour.from_rgb(150, 206, 214))
             display_battle.set_author(name="Злой ГМ", icon_url='https://clipart-best.com/img/ruby/ruby-clip-art-20.png')
 
             data = self.read_db('*', f'person where id = {ctx.message.author.id}')
 
-            person_LVL = data[0][3]
-            person_HP = data[0][2]
-            crip_LVL = person_LVL - 1
+            character = self.Character(data[0][3], data[0][2], data[0][7], data[0][8])
+            crip = self.Crip(data[0][3] - 1, data[0][2]/2, 1)
 
-            person_weapon = data[0][7]
-            damage = self.read_db('damage', f'weapons where id = {person_weapon}')[0]
-
-            person_armor = data[0][8]
-            protection = self.read_db('protection', f'armor where id = {person_armor}')[0]
-
-            description = self.read_db('description', f'mobs where id = {crip_LVL + 1}')[0]
-            if person_HP < 0:
+            if character.hp < 0:
                 await ctx.send('Вы мерты, отдохните в таверне!')
             else:
-                crip_damage = 1
-                crip_HP = person_LVL * 5
 
                 display_battle.add_field(
                     name=f'Характеристики преред игрой:',
-                    value=f"Твоё хп: `{person_HP}`\nХп крипа: `{crip_HP}`",
+                    value=f"Твоё хп: `{character.hp}`\nХп крипа: `{crip.hp}`",
                     inline=False)
 
                 while True:
-                    damage_itog = round(random.uniform(0.5, 2.0) * damage, 2)
-                    damage_itog_person = round(
-                        (round(random.uniform(0.5, 2.0), 2) * crip_damage) - (protection * damage_itog), 2)
+                    crip_damage = crip.move_damage()
+                    character_damage = character.move_damage()
 
+                    character.remove_hp(crip_damage)
+                    crip.remove_hp(character_damage)
 
                     display_battle.add_field(
-                        name=f'Характеристики на ход {count}:',
-                        value=f"Твоё хп: `{person_HP}`-`{damage_itog_person}`:drop_of_blood:\nХп крипа: `{crip_HP}`-`{damage_itog}`:drop_of_blood:",
+                        name=f'Итог {count} хода:',
+                        value=f"Твоё хп: `{character.hp}`:drop_of_blood:\nХп крипа: `{crip.hp}`:drop_of_blood:",
                         inline=False)
 
-                    person_HP -= damage_itog_person
-                    person_HP = round(person_HP, 2)
-
-                    crip_HP -= damage_itog
-                    crip_HP = round(crip_HP, 2)
-
-                    if crip_HP < 0:
+                    if crip.hp <= 0:
                         display_battle.add_field(
-                            name=f'Ты выиграл! \n {description}',
-                            value=f"Твоё хп оставшеесе хп: `{person_HP}`\n"
-                                  f"{self.battle_reward(person_LVL, data[0][0])}",  # сообщение о выпавшем луте
+                            name=f'Ты выиграл! \n {crip.description}',
+                            value=f"Твоё хп оставшеесе хп: `{character.hp}`\n"
+                                  f"{character.get_loot(data[0][0])}",  # сообщение о выпавшем луте
                             inline=False,
                         )
                         break
-                    elif person_HP < 0:
+                    elif character.hp <= 0:
                         display_battle.add_field(
                             name=f'Ты проиграл и остался в этой локации, как призрак. Отнеси своё тело в таверну и отдохни',
-                            value=f" Оставшеесе хп крипа: `{crip_HP}`",
+                            value=f" Оставшеесе хп крипа: `{crip.hp}`",
                             inline=False)
                         break
 
                     count += 1
 
-                self.update_db('person', 'HP', person_HP,
+                self.update_db('person', 'HP', round(character.hp, 2),
                                f'id={ctx.message.author.id}')  # обновление HP после битвы
                 await ctx.send(embed=display_battle)
-            # нужно реалезовать синхронную функцию боя
 
         except Exception as err:
             print(err)
@@ -151,59 +201,60 @@ class Game(commands.Cog, WWDB):
     @commands.command()
     @commands.check_any(check_reg_channel(), check_tav_channel(), check_battle_channel())
     async def inventory(self, ctx, *args):
-        in_hand_temp = self.read_db('in_hand', f'person where id = {ctx.message.author.id}')[0]  # id оружия в руках
-        on_body_temp = self.read_db('on_body', f'person where id = {ctx.message.author.id}')[0]  # id вещи на теле
-        in_hand = self.read_db('name', f'weapons where id = {in_hand_temp}')[0]  # имя оружия в руках
-        on_body = self.read_db('name', f'armor where id = {on_body_temp}')[0]  # имя вещи на теле
-
-        weapons_inventory_temp = self.read_db('inventory_weapons', f'person where id = {ctx.message.author.id}')[
-            0].split(', ')  # массив со всеми оружиями игрока
-        weapons_inventory = ''
-        for i in range(len(weapons_inventory_temp)):  # создание инвентаря для отображения юзеру
-            weapon_data = self.read_db('*', f'weapons where id = {weapons_inventory_temp[i]}')[0]
-            weapons_inventory += f'\n {i + 1}. {weapon_data[1]}: урон - {weapon_data[3]}'
-
-        armor_inventory_temp = self.read_db('inventory_armor', f'person where id = {ctx.message.author.id}')[
-            0].split(', ')  # массив со всеми вещами игрока
-        armor_inventory = ''
-        for i in range(len(armor_inventory_temp)):  # создание инвентаря для отображения юзеру
-            armor_data = self.read_db('*', f'armor where id = {armor_inventory_temp[i]}')[0]
-            armor_inventory += f'\n {i + 1}. {armor_data[1]}: защита - {armor_data[4]}'
-
         if not args:
-            await ctx.send(f'В вашей руке сейчас {in_hand} и надето {on_body}\n'
-                           f'Для изменения сета выберете вкладку инвентаря:\n '
-                           f'1.weapon (t! inventory weapons)\n'
-                           f'2.armor (t! inventory armor)')
-        elif args[0] == 'weapons' and len(args) == 1:
-            await ctx.send(f'Ваше оружие {weapons_inventory}')
-        elif args[0] == 'armor' and len(args) == 1:
-            await ctx.send(f'Ваша броня {armor_inventory}')
+            await ctx.send(f'Для изменения и просмотра инвентаря выберете вкладку:\n '
+                           f'1.weapons\n'
+                           f'2.armor')
 
-        elif args[0] == 'weapons' and int(args[1]) <= len(
+        valid_types = ('weapons', '1', 'armor', '2')
+        def check_type(m): # функция для проверки необходимого сообщения в wait_for
+            return m.channel == ctx.message.channel and m.author == ctx.message.author and m.content in valid_types
 
-                weapons_inventory_temp):  # изменение экипированного оружия
+        types = {
+            'weapons': 'weapons',
+            '1': 'weapons',
+            'armor': 'armor',
+            '2': 'armor'
+        }
 
-            new_in_hand = int(weapons_inventory_temp[int(args[1]) - 1])
+        # отлов необходимого сообщения и задание вкладки инвентаря
+        type_message = await self.bot.wait_for('message', check = check_type, timeout = 30)
+        type = type_message.content
 
-            new_in_hand_name = self.read_db('name', f'weapons where id = {new_in_hand}')[0]
+        # создание вкладки инвентаря
+        inventory_temp = self.read_db(f'inventory_{types[type]}', f'person where id = {ctx.message.author.id}')[0].split(', ')
+        inventory_volume = len(inventory_temp)
+        inventory_string = ''
 
-            self.update_db('person', 'in_hand', new_in_hand, f'id={ctx.message.author.id}')
+        if types[type] in 'weapons':
+            for i in range(inventory_volume):  # создание инвентаря для отображения юзеру
+                weapon_data = self.read_db('*', f'weapons where id = {inventory_temp[i]}')[0]
+                inventory_string += f'\n {i + 1}. {weapon_data[1]}: урон - {weapon_data[3]}'
+                equipped_type = 'in_hand'
+        elif types[type] == 'armor':
+            for i in range(inventory_volume):  # создание инвентаря для отображения юзеру
+                armor_data = self.read_db('*', f'armor where id = {inventory_temp[i]}')[0]
+                inventory_string += f'\n {i + 1}. {armor_data[1]}: защита - {armor_data[4]}'
+                equipped_type = 'on_body'
 
-            await ctx.send(f'Вместо {in_hand} теперь экипирован {new_in_hand_name}')
+        equipped_id = self.read_db(equipped_type, f'person where id = {ctx.message.author.id}')[0]
+        equipped = self.read_db('name', f'{types[type]} where id = {equipped_id}')[0]
 
-        elif args[0] == 'armor' and int(args[1]) <= len(armor_inventory_temp):  # изменение экипированной вещи
-            new_on_body = int(armor_inventory_temp[int(args[1]) - 1])
-            print(armor_inventory_temp)
-            new_on_body_name = self.read_db('name', f'armor where id = {new_on_body}')[0]
-            self.update_db('person', 'on_body', new_on_body, f'id={ctx.message.author.id}')
-            await ctx.send(f'Вместо {on_body} теперь экипирован {new_on_body_name}')
+        await ctx.send(f'Ваше снаряжение {inventory_string}\n Для переэкипировки выберете необходимый пункт')
 
-        else:
-            await ctx.send(
-                f'Вы ввели значение на языке древних эльфов. Пожалуйста, обратитесь по одной из этих комманд:\n'
-                f'1.weapon (t! inventory weapons)\n'
-                f'2.armour (t! inventory armor)')
+        # ----------Переэкипировка объекта----------
+        def check_obj(m): # функция для проверки необходимого сообщения с номером объекта
+            return m.channel == ctx.message.channel and m.author == ctx.message.author and 0 < int(m.content) <= inventory_volume
+
+        # отлов сообщения с номером вещи из инвентаря
+        obj_message = await self.bot.wait_for('message', check=check_obj, timeout=30)
+        obj_num = int(obj_message.content)
+
+        # смена экипированной вещи вещи
+        new_equipped = int(inventory_temp[obj_num - 1])
+        new_equipped_name = self.read_db('name', f'{types[type]} where id = {new_equipped}')[0]
+        self.update_db('person', equipped_type, new_equipped, f'id={ctx.message.author.id}')
+        await ctx.send(f'Вместо {equipped} теперь экипирован {new_equipped_name}')
 
     @commands.command()
     @check_on_rest()
@@ -237,11 +288,9 @@ class Game(commands.Cog, WWDB):
         playersList = ''
         j = 1
         for i in range(len(data)):  # создание списков людей в локациях
-            if loc_channel[ctx.channel.id] in [0, 1, 2, 3, 4, 5, 6] and loc_channel[data[i][4]] == loc_channel[
-                # отдельная локация
-                ctx.channel.id]:
+            if self.loc_channel[ctx.channel.id] in [0, 1, 2, 3, 4, 5, 6] and self.loc_channel[data[i][4]] == self.loc_channel[ctx.channel.id]:
                 playersList += f'{j}. {data[i][1]}, {data[i][3]}LVL.\n'
-            elif loc_channel[ctx.channel.id] == -1:  # общий канал
+            elif self.loc_channel[ctx.channel.id] == -1:  # общий канал
                 playersList += f'{j}. {data[i][1]}\n'
             else:
                 pass
@@ -288,7 +337,7 @@ class Game(commands.Cog, WWDB):
                 await member.add_roles(mainRole)  # выдача роли "игрок"
                 await member.add_roles(role)  # выдача роли начальной локации
                 await member.create_dm()  # личные сообщение с пользователем
-                await member.dm_channel.send(embed=regEmb)
+                await member.dm_channel.send(embed=self.regEmb)
                 await ctx.send(f'{member.mention} - тебя зарегистрировали!')
         except Exception as err:
             print(err)
